@@ -10,3 +10,4 @@ License: none
 Encoding: UTF-8
 Imports: Biostrings, coop, cluster, parallel, foreach, doParallel, digest, S4Vectors
 LazyData: true
+RoxygenNote: 7.1.2
