@@ -1,4 +1,4 @@
-Package: KTU
+Package: KTU2
 Type: Package
 Title: “KTU” (K-mer Taxonomic Unit) algorithm improves biological relevance in microbiome associated study
 Version: 2.0.0
