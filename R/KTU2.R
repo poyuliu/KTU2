@@ -1,3 +1,4 @@
+#' @keywords internal
 rev_comp <- function(x) {
   x.r <- paste0(rev(strsplit(x, "")[[1]]), collapse = "")
   x.r <- gsub("A", "1", x.r)
@@ -10,12 +11,14 @@ rev_comp <- function(x) {
   x.r <- gsub("4", "C", x.r)
   return(x.r)
 }
+#' @keywords internal
 readseq <- function(seq) {
   x <- seq
   x <- paste0(x, collapse = "")
   x.r <- rev_comp(x)
   return(list(x, x.r))
 }
+#' @keywords internal
 aggregate2df <- function(data, groups, FUN) {
   agg.data <- aggregate(data, list(groups), FUN)
   rownames(agg.data) <- agg.data[, 1]
