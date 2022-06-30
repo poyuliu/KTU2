@@ -367,29 +367,10 @@ makektudb <- function(input.fasta,input.taxa,pscore=FALSE,output.file=NULL){
 #' @export
 kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candidate=10,cores=1){
   require(foreach,quietly = T)
-  cl <- parallel::makeCluster(cores) #not to overload your computer
-  doParallel::registerDoParallel(cl)
-
-  db.tetra <- readRDS(dbRDS)
-  db.taxa <- readRDS(taxaRDS)
-  {
-    taxa <- as.character(db.taxa[,2])
-    sep <- ifelse(grepl("; ",taxa[1],fixed = T),"; ",";")
-    taxa <- strsplit(taxa,sep)
-    taxa <- data.frame(do.call(rbind,taxa),row.names = db.taxa[,1])
-  }
-  cos.table <- data.frame(matrix(data = NA,nrow = nrow(db.taxa),ncol=ncol(kmer.table)))
-  cos.table <- foreach::foreach(cln=1:ncol(kmer.table), .combine=cbind) %dopar% {
-    temp.cos.table = apply(db.tetra,2,function(x) coop::cosine(kmer.table[,cln],x)) #calling a function
-    temp.cos.table #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
-  }
-  parallel::stopCluster(cl) #stop cluster
-
   machine.core <- function(x){
     xxx <- matrix(ncol = 8)
     xx <- cbind(taxa[which(x>=cos.cutff),],cos.score=x[which(x>=cos.cutff)])
     if(nrow(xx)>0){
-      #xx <- xx[xx$cos.score>=quantile(xx$cos.score,top.pct,na.rm=TRUE),]
       ranks <- rank(1/(xx$cos.score))
       if(min(ranks)>candidate){
         xx <- xx[which(ranks==min(ranks)),]
@@ -404,16 +385,48 @@ kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candi
     } else if(nrow(xx)==0) xxx[,c(1,8)] <- c("Unassigned",1)
     return(xxx)
   }
+  cl <- parallel::makeCluster(cores) #not to overload your computer
+  doParallel::registerDoParallel(cl)
 
-  taxa.consensus <- lapply(X = as.list(as.data.frame(cos.table)),
-                           FUN = machine.core)
-  taxa.consensus <- data.frame(do.call(rbind,taxa.consensus))
-  colnames(taxa.consensus) <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species","Cos.score")
-  taxa.consensus <- apply(taxa.consensus, 2, as.character)
-  taxa.consensus[is.na(taxa.consensus)] <- "Unassigned"
-  taxa.consensus <- as.data.frame(taxa.consensus)
-  taxa.consensus[,8] <- as.numeric(as.character(taxa.consensus[,8]))
-  rownames(taxa.consensus) <- colnames(kmer.table)
+  db.tetra <- readRDS(dbRDS)
+  db.taxa <- readRDS(taxaRDS)
+  {
+    taxa <- as.character(db.taxa[,2])
+    sep <- ifelse(grepl("; ",taxa[1],fixed = T),"; ",";")
+    taxa <- strsplit(taxa,sep)
+    taxa <- data.frame(do.call(rbind,taxa),row.names = db.taxa[,1])
+  }
+
+  i1 <- seq(1,ncol(data.frame(kmer.table)),20)
+  i2 <- c((i1[-1]-1),ncol(data.frame(kmer.table)))
+  i2 <- i2[i2>0]
+
+  for(i in 1:length(i1)){
+    kmer <-  kmer.table[,i1[i]:i2[i]]
+    cos.table <- data.frame(matrix(data = NA,nrow = nrow(db.taxa),ncol=ncol(kmer)))
+    cos.table <- foreach::foreach(cln=1:ncol(kmer), .combine=cbind) %dopar% {
+      temp.cos.table = apply(db.tetra,2,function(x) coop::cosine(kmer[,cln],x)) #calling a function
+      temp.cos.table #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
+    }
+    taxa.consensus <- lapply(X = as.list(as.data.frame(cos.table)),
+                             FUN = machine.core)
+    taxa.consensus <- data.frame(do.call(rbind,taxa.consensus))
+    colnames(taxa.consensus) <- c("Kingdom","Phylum","Class","Order","Family","Genus","Species","Cos.score")
+    taxa.consensus <- apply(taxa.consensus, 2, as.character)
+    taxa.consensus[is.na(taxa.consensus)] <- "Unassigned"
+    taxa.consensus <- as.data.frame(taxa.consensus)
+    taxa.consensus[,8] <- as.numeric(as.character(taxa.consensus[,8]))
+    rownames(taxa.consensus) <- colnames(kmer)
+    invisible(gc())
+    if(i==1){
+      write.table(taxa.consensus,file = "kaxa-temp.tsv",sep = "\t")
+    } else if(i>1){
+      write.table(taxa.consensus,file = "kaxa-temp.tsv",append = T,sep = "\t",col.names = FALSE)
+    }
+  }
+  parallel::stopCluster(cl) #stop cluster
+  taxa.consensus <- read.delim("kaxa-temp.tsv")
+  file.remove("kaxa-temp.tsv")
   return(taxa.consensus)
 }
 
