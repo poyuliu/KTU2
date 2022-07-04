@@ -191,7 +191,8 @@ klustering <- function (repseq, seqfromfile=TRUE, pscore = FALSE, feature.table 
 
     centroid <- kms$id.med
     crepseq <- sapply(species[centroid], "[[", 1)
-    for (i in 1:length(centroid)) names(crepseq)[i] <- digest::digest(crepseq[i],algo = "md5", serialize = F)
+    #for (i in 1:length(centroid)) names(crepseq)[i] <- digest::digest(crepseq[i],algo = "md5", serialize = F)
+    names(crepseq) <- sapply(as.list(crepseq),FUN = function(x) digest::digest(x,algo = "md5", serialize = F))
   }
 
   kmer.table <- data.frame(tetra.table[, centroid])
@@ -599,7 +600,6 @@ ktusp <- function (repseq, feature.table = NULL, write.fasta = TRUE,
 #'
 #' @param seqtab matrix, ouput from dada2::makeSequenceTable.
 #' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
-#' @param path2fasta path for write/read pre-KTU fasta.
 #' @param method either 'klustering' or 'ktusp'.
 #' @param ... pass arguments to 'klustering' or 'ktusp'.
 #' @return KTU.table Aggregated KTU table.
@@ -610,12 +610,11 @@ ktusp <- function (repseq, feature.table = NULL, write.fasta = TRUE,
 #' @examples
 #' data(seqtab)
 #' # run klustering on a subset of the ASVs.
-#' dada2KTU(seqtab = seqtab, subset = 200, path2fasta = "test_dada2KTU.fasta", cores = 1)
+#' dada2KTU(seqtab = seqtab, subset = 200, cores = 1)
 #' # run ktusp:
-#' dada2KTU(seqtab = seqtab, path2fasta = "test_dada2KTU_ktusp.fasta",
-#'          method = "ktusp", subset = 800, cores = 2,
+#' dada2KTU(seqtab = seqtab, method = "ktusp", subset = 800, cores = 2,
 #'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
-dada2KTU <- function(seqtab = NULL, subset = NULL, path2fasta = NULL, method = "klustering", ...) {
+dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
   require(Biostrings)
   extraargs <- list(...)
   #feature table (ie OTU table) from phyloseq
@@ -637,21 +636,16 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, path2fasta = NULL, method = "
     stop("Input must have sequences as colnames.")
   stopifnot(class(ft) == "data.frame")
   stopifnot(!is.null(names(seqs)))
-  # add rownames to first column (not to conflict with line 204   otu <- feature.table[, -1])
+  # add rownames to first column
   ft <- cbind(asv = rownames(ft), ft)
-  # write seqs to fasta.
-  Biostrings::writeXStringSet(seqs,
-                              format = "fasta",
-                              filepath = path2fasta,
-                              width = max(seqs@ranges@width))
   # run clustering
   if(method == "klustering") {
-    KTU::klustering(repseq = path2fasta,
+    klustering(repseq = seqs,
                     feature.table = ft, ...)
   } else if(method == "ktusp") {
     if(nrow(ft) < extraargs$split_reassemble)
       warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
-    ktusp(repseq = path2fasta,
+    ktusp(repseq = seqs,
           feature.table = ft, ...)
   }
 }
@@ -661,7 +655,6 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, path2fasta = NULL, method = "
 #'
 #' @param ps phyloseq object.
 #' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
-#' @param path2fasta path for write/read pre-KTU fasta.
 #' @param dnaseqs otu_table/refseq: slot to search for DNA sequences in phyloseq; either as row/col names in otu_table or as a DNAStringSet in the refseq.
 #' @param method either 'klustering' or 'ktusp'.
 #' @return KTU.table Aggregated KTU table.
@@ -673,13 +666,12 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, path2fasta = NULL, method = "
 #' ps <- readRDS(
 #' url("https://zenodo.org/record/4155877/files/Schreuder2020_TemporalDynamicsCloacalMicrobiota_phyloseq.rds"))
 #' # run klustering on a subset of the ASVs with DNA sequences as ASV name in otu_table:
-#' ps2KTU(ps = ps, subset = 200, path2fasta = "psklust_test.fasta", dnaseqs = "otu_table")
+#' ps2KTU(ps = ps, subset = 200, dnaseqs = "otu_table")
 #' # run klustering on a subset of the ASVs with DNA sequences in refseq slot:
 #' data(phyloseq_marsh)
-#' ps2KTU(ps = phyloseq_marsh, subset = 200, path2fasta = "psklust_refseq_test.fasta", dnaseqs = "refseq")
+#' ps2KTU(ps = phyloseq_marsh, subset = 200, dnaseqs = "refseq")
 #' # run ktusp:
-#' ps2KTU(ps = ps, path2fasta = "ps_test_ktusp.fasta",
-#'          method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
+#' ps2KTU(ps = ps, method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
 #'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
 ps2KTU <- function(ps = NULL, subset = NULL, path2fasta = NULL, dnaseqs = NULL, method = "klustering", ...) {
   require(Biostrings); require(phyloseq)
@@ -704,26 +696,21 @@ ps2KTU <- function(ps = NULL, subset = NULL, path2fasta = NULL, dnaseqs = NULL, 
     stop("phyloseq object must have DNA sequences as rownanes in the otu_table slot or as a DNAStringSet in the refseq slot")
   stopifnot(class(ft) == "data.frame")
   stopifnot(!is.null(names(seqs)))
-  # add rownames to first column (not to conflict with line 204   otu <- feature.table[, -1])
+  # add rownames to first column
   ft <- cbind(asv = rownames(ft), ft)
   # subset (optional)
   if(is.numeric(subset)){
     seqs <- sample(seqs, subset)
     ft <- ft[match(as.character(seqs), rownames(ft)), ]
   }
-  # write seqs to fasta
-  Biostrings::writeXStringSet(seqs,
-                              format = "fasta",
-                              filepath = path2fasta,
-                              width = max(seqs@ranges@width))
   # run clustering
   if(method == "klustering") {
-    KTU::klustering(repseq = path2fasta,
+    KTU::klustering(repseq = seqs,
                     feature.table = ft, ...)
   } else if(method == "ktusp") {
     if(nrow(ft) < extraargs$split_reassemble)
       warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
-    ktusp(repseq = path2fasta,
+    ktusp(repseq = seqs,
           feature.table = ft, ...)
   }
 }
