@@ -673,7 +673,7 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
 #' # run ktusp:
 #' ps2KTU(ps = ps, method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
 #'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
-ps2KTU <- function(ps = NULL, subset = NULL, path2fasta = NULL, dnaseqs = NULL, method = "klustering", ...) {
+ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klustering", ...) {
   require(Biostrings); require(phyloseq)
   extraargs <- list(...)
   #feature table (ie OTU table) from phyloseq
