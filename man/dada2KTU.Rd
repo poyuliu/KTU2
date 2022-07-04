@@ -4,20 +4,12 @@
 \alias{dada2KTU}
 \title{Klustering from dada2 workflow}
 \usage{
-dada2KTU(
-  seqtab = NULL,
-  subset = NULL,
-  path2fasta = NULL,
-  method = "klustering",
-  ...
-)
+dada2KTU(seqtab = NULL, subset = NULL, method = "klustering", ...)
 }
 \arguments{
 \item{seqtab}{matrix, ouput from dada2::makeSequenceTable.}
 
 \item{subset}{(optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.}
-
-\item{path2fasta}{path for write/read pre-KTU fasta.}
 
 \item{method}{either 'klustering' or 'ktusp'.}
 
@@ -38,9 +30,8 @@ It reads the output matrix from dada2::makeSequenceTable into KTU::klustering or
 \examples{
 data(seqtab)
 # run klustering on a subset of the ASVs.
-dada2KTU(seqtab = seqtab, subset = 200, path2fasta = "test_dada2KTU.fasta", cores = 1)
+dada2KTU(seqtab = seqtab, subset = 200, cores = 1)
 # run ktusp:
-dada2KTU(seqtab = seqtab, path2fasta = "test_dada2KTU_ktusp.fasta",
-         method = "ktusp", subset = 800, cores = 2,
+dada2KTU(seqtab = seqtab, method = "ktusp", subset = 800, cores = 2,
          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
 }

@@ -18,8 +18,6 @@ ps2KTU(
 
 \item{subset}{(optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.}
 
-\item{path2fasta}{path for write/read pre-KTU fasta.}
-
 \item{dnaseqs}{otu_table/refseq: slot to search for DNA sequences in phyloseq; either as row/col names in otu_table or as a DNAStringSet in the refseq.}
 
 \item{method}{either 'klustering' or 'ktusp'.}
@@ -40,12 +38,11 @@ It reads a phyloseq object with the refseq slot.
 ps <- readRDS(
 url("https://zenodo.org/record/4155877/files/Schreuder2020_TemporalDynamicsCloacalMicrobiota_phyloseq.rds"))
 # run klustering on a subset of the ASVs with DNA sequences as ASV name in otu_table:
-ps2KTU(ps = ps, subset = 200, path2fasta = "psklust_test.fasta", dnaseqs = "otu_table")
+ps2KTU(ps = ps, subset = 200, dnaseqs = "otu_table")
 # run klustering on a subset of the ASVs with DNA sequences in refseq slot:
 data(phyloseq_marsh)
-ps2KTU(ps = phyloseq_marsh, subset = 200, path2fasta = "psklust_refseq_test.fasta", dnaseqs = "refseq")
+ps2KTU(ps = phyloseq_marsh, subset = 200, dnaseqs = "refseq")
 # run ktusp:
-ps2KTU(ps = ps, path2fasta = "ps_test_ktusp.fasta",
-         method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
+ps2KTU(ps = ps, method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
 }
