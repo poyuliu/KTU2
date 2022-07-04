@@ -39,8 +39,12 @@ tetra.freq <- function (repseq, pscore = FALSE, file = TRUE, output.seq = FALSE,
   require(parallel)
   cl <- makeCluster(cores)
   if (isTRUE(file)) {
-    scaffolds = Biostrings::readDNAStringSet(filepath = repseq,
-                                             use.names = T)
+    if(is.character(repseq)){
+      scaffolds = Biostrings::readDNAStringSet(filepath = repseq,
+                                               use.names = T)
+    } else if(class(repseq)=="DNAStringSet"){
+      scaffolds <- repseq
+    }
   }
   else scaffolds = Biostrings::DNAStringSet(repseq)
   asv.id <- scaffolds@ranges@NAMES
@@ -114,7 +118,9 @@ klustering <- function (repseq, seqfromfile=TRUE, pscore = FALSE, feature.table 
     message("k-mer frequency calling...")
     tetra.table <- tetra.freq(repseq, pscore = as.logical(pscore), file = as.logical(seqfromfile), cores=cores)
     asv.id <- colnames(tetra.table)
-    species  <- as.character(Biostrings::readDNAStringSet(filepath = repseq,use.names = T)) #2022/5/18
+    if(class(repseq)=="DNAStringSet"){
+      species  <- as.character(repseq)
+    } else species  <- as.character(Biostrings::readDNAStringSet(filepath = repseq,use.names = T))
   }
   message("cosine dissimilarity measurement...")
   cos <- as.dist(1 - coop::cosine(tetra.table))
