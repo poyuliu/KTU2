@@ -592,3 +592,164 @@ ktusp <- function (repseq, feature.table = NULL, write.fasta = TRUE,
   }
   else return(list(ReqSeq=ReqSeq,kmer.table=kmer.table,clusters=clusters))
 }
+
+#' Klustering from dada2 workflow
+#'
+#' It reads the output matrix from dada2::makeSequenceTable into KTU::klustering or KTU::ktusp.
+#'
+#' @param seqtab matrix, ouput from dada2::makeSequenceTable.
+#' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
+#' @param path2fasta path for write/read pre-KTU fasta.
+#' @param method either 'klustering' or 'ktusp'.
+#' @param ... pass arguments to 'klustering' or 'ktusp'.
+#' @return KTU.table Aggregated KTU table.
+#' @return ReqSeq Representative KTU sequences
+#' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table.
+#' @return clusters K-clusters of input features.
+#' @export
+#' @examples
+#' data(seqtab)
+#' # run klustering on a subset of the ASVs.
+#' dada2KTU(seqtab = seqtab, subset = 200, path2fasta = "test_dada2KTU.fasta", cores = 1)
+#' # run ktusp:
+#' dada2KTU(seqtab = seqtab, path2fasta = "test_dada2KTU_ktusp.fasta",
+#'          method = "ktusp", subset = 800, cores = 2,
+#'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
+dada2KTU <- function(seqtab = NULL, subset = NULL, path2fasta = NULL, method = "klustering", ...) {
+  require(Biostrings)
+  extraargs <- list(...)
+  #feature table (ie OTU table) from phyloseq
+  stopifnot(any(class(seqtab) %in% "matrix"))
+  ft <- data.frame(t(seqtab))
+  seqs <-
+    {
+      hh <- Biostrings::DNAStringSet(dimnames(seqtab)[[2]])
+      names(hh) <- as.character(hh)
+      hh
+    }
+  # subset (optional)
+  if(is.numeric(subset)){
+    seqs <- sample(seqs, subset)
+    ft <- ft[match(as.character(seqs), rownames(ft)), ]
+  }
+  # checks
+  if(class(seqs) != "DNAStringSet" | length(seqs) != nrow(ft))
+    stop("Input must have sequences as colnames.")
+  stopifnot(class(ft) == "data.frame")
+  stopifnot(!is.null(names(seqs)))
+  # add rownames to first column (not to conflict with line 204   otu <- feature.table[, -1])
+  ft <- cbind(asv = rownames(ft), ft)
+  # write seqs to fasta.
+  Biostrings::writeXStringSet(seqs,
+                              format = "fasta",
+                              filepath = path2fasta,
+                              width = max(seqs@ranges@width))
+  # run clustering
+  if(method == "klustering") {
+    KTU::klustering(repseq = path2fasta,
+                    feature.table = ft, ...)
+  } else if(method == "ktusp") {
+    if(nrow(ft) < extraargs$split_reassemble)
+      warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
+    ktusp(repseq = path2fasta,
+          feature.table = ft, ...)
+  }
+}
+#' Klustering using as input a phyloseq object
+#'
+#' It reads a phyloseq object with the refseq slot.
+#'
+#' @param ps phyloseq object.
+#' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
+#' @param path2fasta path for write/read pre-KTU fasta.
+#' @param dnaseqs otu_table/refseq: slot to search for DNA sequences in phyloseq; either as row/col names in otu_table or as a DNAStringSet in the refseq.
+#' @param method either 'klustering' or 'ktusp'.
+#' @return KTU.table Aggregated KTU table.
+#' @return ReqSeq Representative KTU sequences
+#' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table.
+#' @return clusters K-clusters of input features.
+#' @export
+#' @examples
+#' ps <- readRDS(
+#' url("https://zenodo.org/record/4155877/files/Schreuder2020_TemporalDynamicsCloacalMicrobiota_phyloseq.rds"))
+#' # run klustering on a subset of the ASVs with DNA sequences as ASV name in otu_table:
+#' ps2KTU(ps = ps, subset = 200, path2fasta = "psklust_test.fasta", dnaseqs = "otu_table")
+#' # run klustering on a subset of the ASVs with DNA sequences in refseq slot:
+#' data(phyloseq_marsh)
+#' ps2KTU(ps = phyloseq_marsh, subset = 200, path2fasta = "psklust_refseq_test.fasta", dnaseqs = "refseq")
+#' # run ktusp:
+#' ps2KTU(ps = ps, path2fasta = "ps_test_ktusp.fasta",
+#'          method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
+#'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
+ps2KTU <- function(ps = NULL, subset = NULL, path2fasta = NULL, dnaseqs = NULL, method = "klustering", ...) {
+  require(Biostrings); require(phyloseq)
+  extraargs <- list(...)
+  #feature table (ie OTU table) from phyloseq
+  stopifnot(any(class(ps) %in% "phyloseq"))
+  otu1 <- as(otu_table(ps), "matrix")
+  # transpose if necessary: rows are taxa
+  if(!taxa_are_rows(ps)) otu1 <- t(otu1)
+  ft <- as.data.frame(otu1)
+  # get sequences
+  if(dnaseqs == "otu_table") {
+    seqs <- rownames(otu1)
+    seqs <- Biostrings::DNAStringSet(seqs)
+    names(seqs) <- as.character(seqs)
+  } else if(dnaseqs == "refseq") {
+    seqs <- phyloseq::refseq(ps)
+    rownames(ft) <- seqs[match(rownames(ft), names(seqs))]
+    names(seqs) <- as.character(seqs)
+  }
+  if(class(seqs) != "DNAStringSet" | length(seqs) != ntaxa(ps))
+    stop("phyloseq object must have DNA sequences as rownanes in the otu_table slot or as a DNAStringSet in the refseq slot")
+  stopifnot(class(ft) == "data.frame")
+  stopifnot(!is.null(names(seqs)))
+  # add rownames to first column (not to conflict with line 204   otu <- feature.table[, -1])
+  ft <- cbind(asv = rownames(ft), ft)
+  # subset (optional)
+  if(is.numeric(subset)){
+    seqs <- sample(seqs, subset)
+    ft <- ft[match(as.character(seqs), rownames(ft)), ]
+  }
+  # write seqs to fasta
+  Biostrings::writeXStringSet(seqs,
+                              format = "fasta",
+                              filepath = path2fasta,
+                              width = max(seqs@ranges@width))
+  # run clustering
+  if(method == "klustering") {
+    KTU::klustering(repseq = path2fasta,
+                    feature.table = ft, ...)
+  } else if(method == "ktusp") {
+    if(nrow(ft) < extraargs$split_reassemble)
+      warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
+    ktusp(repseq = path2fasta,
+          feature.table = ft, ...)
+  }
+}
+
+#' Subsampled ASVs abundance table from metabarcoding of 16S from marsh soils
+#'
+#' This dataset contains subsampled most frequent ASVs and their counts as a matrix across 41 samples
+#'  from marsh soils in southern Spain.
+#'  They come from: Camacho-Sanchez et al. Bacterial assemblage in Mediterranean salt marshes: disentangling
+#'  the relative importance of seasonality, zonation and halophytes. In review.
+#'
+#' @name seqtab
+#' @usage data(seqtab)
+#' @format A matrix containing 1000 columns, ASVS, and 41 rows, samples.
+#' @source \url{https://github.com/csmiguel/marsh_metabarcoding}
+"seqtab"
+
+#' Subsampled phyloseq object from metabarcoding of 16S from marsh soils
+#'
+#' This dataset contains subsampled most frequent ASVs and their counts as a matrix across 41 samples
+#'  from marsh soils in southern Spain.
+#'  They come from: Camacho-Sanchez et al. Bacterial assemblage in Mediterranean salt marshes: disentangling
+#'  the relative importance of seasonality, zonation and halophytes. In review.
+#'
+#' @name phyloseq_marsh
+#' @usage data(phyloseq_marsh)
+#' @format A phyloseq object containing 2417 ASVs and 10 samples.
+#' @source \url{https://github.com/csmiguel/marsh_metabarcoding}
+"phyloseq_marsh"
