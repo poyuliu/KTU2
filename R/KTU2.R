@@ -741,31 +741,32 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #' @source \url{https://github.com/csmiguel/marsh_metabarcoding}
 "phyloseq_marsh"
 
-#' Pre-trained NCBI 16S Databases for Kaxonomy annotation
+#' Pre-trained 16S Databases for Kaxonomy annotation
 #'
-#' These databases are pre-trained species+strain levels taxonomy annotation 16S rRNA gene databases retrieved from NCBI (2022/02/10).
-#'  The databases involved two hypervariable-region trimmed formats, V3V4 (341F-805R, primer-trimmed) and V4 (515F-806R, primer-trimmed) regions.
+#' The pre-trained databases contain a species+strain levels 16S rRNA gene database retrieved from NCBI (2022/02/10) and SILVA 7-level 16S rRNA gene database (ver. 138).
+#'  Two hypervariable-region trimmed formats, V3V4 (341F-805R, primer-trimmed) and V4 (515F-806R, primer-trimmed) regions, are available.
 #'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.\n
 #'  See how to use pre-trained database for taxonomy annotation in Examples.
 #'
-#' @name NCBI_16S_DB
-#' @format
-#' Pre-trained tetranucleotide database and taxonomy information (RDS format) of NCBI 16S rRNA gene.\n
-#' The databases contain:\n
-#' NCBI_20220210_V3V4_DB.RDS\n
-#' NCBI_20220210_V3V4_TX.RDS\n
-#' NCBI_20220210_V4_DB.RDS\n
-#' NCBI_20220210_V4_TX.RDS
+#' @name DB
+#' @usage
+#' data(NCBI_V3V4)
+#' data(NCBI_V4)
+#' data(SILVA138_V3V4)
+#' data(SILVA138_V4)
+#' @format Pre-trained tetranucleotide database and taxonomy information (path to RDS files) of 16S rRNA genes.
 #' @examples
-#' DB <- system.file("extdata/NCBI_20220210_V3V4_DB.RDS",package = "KTU2")
-#' TX <- system.file("extdata/NCBI_20220210_V3V4_TX.RDS",package = "KTU2")
+#' data(NCBI_V3V4)
 #'
 #' kluster <- readRDS("kluster.RDS") # read klustering/ktusp result object from RDS file
-#' kaxa <- kaxonomy(dbRDS = DB,
-#'                  taxaRDS = TX,
+#' kaxa <- kaxonomy(dbRDS = NCBI_V3V4['DB'],
+#'                  taxaRDS = NCBI_V3V4['TX'],
 #'                  kmer.table = kluster$kmer.table,
 #'                  cores = 4)
 #'
 #' write.table(kaxa,file = "kaxonomy.tsv",sep="\t") # write out with tab-delimited text file
 #' saveRDS(kaxa,"kaxonomy.RDS") # write out with RDS format
-
+"NCBI_V3V4"
+"NCBI_V4"
+"SILVA138_V3V4"
+"SILVA138_V4"
