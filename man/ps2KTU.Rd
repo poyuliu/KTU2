@@ -4,14 +4,7 @@
 \alias{ps2KTU}
 \title{Klustering using as input a phyloseq object}
 \usage{
-ps2KTU(
-  ps = NULL,
-  subset = NULL,
-  path2fasta = NULL,
-  dnaseqs = NULL,
-  method = "klustering",
-  ...
-)
+ps2KTU(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klustering", ...)
 }
 \arguments{
 \item{ps}{phyloseq object.}

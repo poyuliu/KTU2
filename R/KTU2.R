@@ -768,4 +768,4 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'
 #' write.table(kaxa,file = "kaxonomy.tsv",sep="\t") # write out with tab-delimited text file
 #' saveRDS(kaxa,"kaxonomy.RDS") # write out with RDS format
-"NCBI_16S_DB"
+
