@@ -740,3 +740,32 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #' @format A phyloseq object containing 2417 ASVs and 10 samples.
 #' @source \url{https://github.com/csmiguel/marsh_metabarcoding}
 "phyloseq_marsh"
+
+#' Pre-trained NCBI 16S Databases for Kaxonomy annotation
+#'
+#' These databases are pre-trained species+strain levels taxonomy annotation 16S rRNA gene databases retrieved from NCBI (2022/02/10).
+#'  The databases involved two hypervariable-region trimmed formats, V3V4 (341F-805R, primer-trimmed) and V4 (515F-806R, primer-trimmed) regions.
+#'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.\n
+#'  See how to use pre-trained database for taxonomy annotation in Examples.
+#'
+#' @name NCBI_16S_DB
+#' @format
+#' Pre-trained tetranucleotide database and taxonomy information (RDS format) of NCBI 16S rRNA gene.\n
+#' The databases contain:\n
+#' NCBI_20220210_V3V4_DB.RDS\n
+#' NCBI_20220210_V3V4_TX.RDS\n
+#' NCBI_20220210_V4_DB.RDS\n
+#' NCBI_20220210_V4_TX.RDS
+#' @examples
+#' DB <- system.file("extdata/NCBI_20220210_V3V4_DB.RDS",package = "KTU2")
+#' TX <- system.file("extdata/NCBI_20220210_V3V4_TX.RDS",package = "KTU2")
+#'
+#' kluster <- readRDS("kluster.RDS") # read klustering/ktusp result object from RDS file
+#' kaxa <- kaxonomy(dbRDS = DB,
+#'                  taxaRDS = TX,
+#'                  kmer.table = kluster$kmer.table,
+#'                  cores = 4)
+#'
+#' write.table(kaxa,file = "kaxonomy.tsv",sep="\t") # write out with tab-delimited text file
+#' saveRDS(kaxa,"kaxonomy.RDS") # write out with RDS format
+"NCBI_16S_DB"
