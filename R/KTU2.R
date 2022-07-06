@@ -748,7 +748,7 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.
 #'  See how to use a pre-trained database for taxonomy annotation in Examples.
 #'
-#' @name DB
+#' @name kaxaDB
 #' @usage
 #' data(NCBI_V3V4)
 #' data(NCBI_V4)
