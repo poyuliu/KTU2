@@ -745,8 +745,8 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'
 #' The pre-trained databases contain a species+strain levels 16S rRNA gene database retrieved from NCBI (2022/02/10) and SILVA 7-level 16S rRNA gene database (ver. 138).
 #'  Two hypervariable-region trimmed formats, V3V4 (341F-805R, primer-trimmed) and V4 (515F-806R, primer-trimmed) regions, are available.
-#'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.\n
-#'  See how to use pre-trained database for taxonomy annotation in Examples.
+#'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.
+#'  See how to use a pre-trained database for taxonomy annotation in Examples.
 #'
 #' @name DB
 #' @usage
