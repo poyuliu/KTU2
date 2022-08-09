@@ -526,9 +526,9 @@ split_tetra <- function(repseq,split_tree_init=5,split_lwrlim=10000,split_reasse
   keepname <- names(ct)
   for(i in 1:length(ct.count)) {
     ct <- gsub(pattern = names(ct.count)[i],replacement = i,x = ct)
+    ct <- as.integer(ct)
     ct.count <- table(ct)
   }
-  ct <- as.integer(ct)
   names(ct) <- keepname
   invisible(gc())
   message(paste("Finalized cutree:",length(ct.count),"\n subtree sizes:", paste(ct.count,collapse = ", ")))
