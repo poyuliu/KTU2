@@ -364,15 +364,15 @@ makektudb <- function(input.fasta,input.taxa,pscore=FALSE,output.file=NULL){
 #' KTU annotation
 #'
 #' KTU-based alignment-free taxonomy assignment
-#' @param dbRDS Kmer formated database RDS file
-#' @param taxaRDS taxonomy ID RDS file
+#' @param dbRDS Kmer formated database RDS file or choosing a built-in database. see \link[KTU2]{kaxaDB}
+#' @param taxaRDS taxonomy ID RDS file, NULL if dbRDS is used by built-in database
 #' @param kmer.table tetranucleotide frequency table for annotation
 #' @param cos.cutff cosine similarity cutoff, default=0.95
 #' @param consensus taxonomy assignment by consensus [0-1]
 #' @param candidate how many candidates (≥ cos.cutff) for taxonomy assignment
 #' @param cores Numbers of CPUs
 #' @export
-kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candidate=10,cores=1){
+kaxonomy <- function(dbRDS,taxaRDS=NULL,kmer.table,cos.cutff=0.95,consensus=0.8,candidate=10,cores=1){
   require(foreach,quietly = T)
   machine.core <- function(x){
     xxx <- matrix(ncol = 8)
@@ -395,8 +395,14 @@ kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candi
   cl <- parallel::makeCluster(cores) #not to overload your computer
   doParallel::registerDoParallel(cl)
 
-  db.tetra <- readRDS(dbRDS)
-  db.taxa <- readRDS(taxaRDS)
+  if(is.null(taxaRDS) & dbRDS=="NCBI_V3V4" | dbRDS=="NCBI_V4" | dbRDS=="SILVA138_V3V4" | dbRDS=="SILVA138_V4"){
+    path <- eval(parse(text = 'system.file("extdata",package = "KTU2")'))
+    db.tetra <- readRDS(paste0(path,"/",dbRDS,"_DB.RDS"))
+    db.taxa <- readRDS(paste0(path,"/",dbRDS,"_TX.RDS"))
+  } else if(!is.null(dbRDS) & !is.null(taxaRDS)){
+    db.tetra <- readRDS(dbRDS)
+    db.taxa <- readRDS(taxaRDS)
+  }
   {
     taxa <- as.character(db.taxa[,2])
     sep <- ifelse(grepl("; ",taxa[1],fixed = T),"; ",";")
@@ -436,6 +442,7 @@ kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candi
   file.remove("kaxa-temp.tsv")
   return(taxa.consensus)
 }
+
 
 
 #' KTU evaluation
@@ -747,26 +754,17 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'  Two hypervariable-region trimmed formats, V3V4 (341F-805R, primer-trimmed) and V4 (515F-806R, primer-trimmed) regions, are available.
 #'  A pair of files (DB and TX, RDS format) are required for annotation by using 'kaxonomy' function.
 #'  See how to use a pre-trained database for taxonomy annotation in Examples.
-#'
+#' Available built-in databases: NCBI_V3V4, NCBI_V4, SILVA138_V3V4, and SILVA138_V4
 #' @name kaxaDB
-#' @usage
-#' data(NCBI_V3V4)
-#' data(NCBI_V4)
-#' data(SILVA138_V3V4)
-#' data(SILVA138_V4)
 #' @format Pre-trained tetranucleotide database and taxonomy information (path to RDS files) of 16S rRNA genes.
 #' @examples
-#' data(NCBI_V3V4)
 #'
 #' kluster <- readRDS("kluster.RDS") # read klustering/ktusp result object from RDS file
-#' kaxa <- kaxonomy(dbRDS = NCBI_V3V4['DB'],
-#'                  taxaRDS = NCBI_V3V4['TX'],
+#' kaxa <- kaxonomy(dbRDS = "NCBI_V3V4",
+#'                  taxaRDS = NULL,
 #'                  kmer.table = kluster$kmer.table,
 #'                  cores = 4)
 #'
 #' write.table(kaxa,file = "kaxonomy.tsv",sep="\t") # write out with tab-delimited text file
 #' saveRDS(kaxa,"kaxonomy.RDS") # write out with RDS format
-"NCBI_V3V4"
-"NCBI_V4"
-"SILVA138_V3V4"
-"SILVA138_V4"
+

@@ -6,7 +6,7 @@
 \usage{
 kaxonomy(
   dbRDS,
-  taxaRDS,
+  taxaRDS = NULL,
   kmer.table,
   cos.cutff = 0.95,
   consensus = 0.8,
@@ -15,9 +15,9 @@ kaxonomy(
 )
 }
 \arguments{
-\item{dbRDS}{Kmer formated database RDS file}
+\item{dbRDS}{Kmer formated database RDS file or choosing a built-in database. see \link[KTU2]{kaxaDB}}
 
-\item{taxaRDS}{taxonomy ID RDS file}
+\item{taxaRDS}{taxonomy ID RDS file, NULL if dbRDS is used by built-in database}
 
 \item{kmer.table}{tetranucleotide frequency table for annotation}
 
