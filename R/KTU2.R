@@ -756,6 +756,7 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'  See how to use a pre-trained database for taxonomy annotation in Examples.
 #' Available built-in databases: NCBI_V3V4, NCBI_V4, SILVA138_V3V4, and SILVA138_V4
 #' @name kaxaDB
+#' @usage NULL
 #' @format Pre-trained tetranucleotide database and taxonomy information (path to RDS files) of 16S rRNA genes.
 #' @examples
 #'
@@ -767,4 +768,4 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
 #'
 #' write.table(kaxa,file = "kaxonomy.tsv",sep="\t") # write out with tab-delimited text file
 #' saveRDS(kaxa,"kaxonomy.RDS") # write out with RDS format
-
+kaxaDB <- function(){}
