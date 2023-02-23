@@ -608,7 +608,8 @@ ktusp <- function (repseq, feature.table = NULL, write.fasta = TRUE,
 #' @param seqtab matrix, ouput from dada2::makeSequenceTable.
 #' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
 #' @param method either 'klustering' or 'ktusp'.
-#' @param ... pass arguments to 'klustering' or 'ktusp'.
+#' @param split_reassemble Reassemble tree tips when subtrees are too small, default is 1000 (see function 'ktusp').
+#' @param ...	other parameters passed to 'klustering' or 'ktusp'.
 #' @return KTU.table Aggregated KTU table.
 #' @return ReqSeq Representative KTU sequences
 #' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table.
@@ -621,9 +622,8 @@ ktusp <- function (repseq, feature.table = NULL, write.fasta = TRUE,
 #' # run ktusp:
 #' dada2KTU(seqtab = seqtab, method = "ktusp", subset = 800, cores = 2,
 #'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
-dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
+dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", split_reassemble = 1000, ...) {
   require(Biostrings)
-  extraargs <- list(...)
   #feature table (ie OTU table) from phyloseq
   stopifnot(any(class(seqtab) %in% "matrix"))
   ft <- data.frame(t(seqtab))
@@ -645,14 +645,17 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
   stopifnot(!is.null(names(seqs)))
   # add rownames to first column
   ft <- cbind(asv = rownames(ft), ft)
+  # write sequences to temp fasta file
+  tempseqs <- tempfile(fileext = ".fasta")
+  Biostrings::writeXStringSet(seqs, tempseqs)
   # run clustering
   if(method == "klustering") {
-    klustering(repseq = seqs,
+    klustering(repseq = tempseqs,
                     feature.table = ft, ...)
   } else if(method == "ktusp") {
-    if(nrow(ft) < extraargs$split_reassemble)
+    if(nrow(ft) < split_reassemble)
       warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
-    ktusp(repseq = seqs,
+    ktusp(repseq = tempseqs,
           feature.table = ft, ...)
   }
 }
@@ -664,6 +667,8 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
 #' @param subset (optional) 'numeric' for debugging. Limit klustering to a randomly sampled subset of ASVs/OTUs.
 #' @param dnaseqs otu_table/refseq: slot to search for DNA sequences in phyloseq; either as row/col names in otu_table or as a DNAStringSet in the refseq.
 #' @param method either 'klustering' or 'ktusp'.
+#' @param split_reassemble Reassemble tree tips when subtrees are too small, default is 1000 (see function 'ktusp').
+#' @param ...	other parameters passed to 'klustering' or 'ktusp'.
 #' @return KTU.table Aggregated KTU table.
 #' @return ReqSeq Representative KTU sequences
 #' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table.
@@ -680,9 +685,8 @@ dada2KTU <- function(seqtab = NULL, subset = NULL, method = "klustering", ...) {
 #' # run ktusp:
 #' ps2KTU(ps = ps, method = "ktusp", subset = 800, cores = 2, dnaseqs = "otu_table",
 #'          split_tree_init = 5, split_lwrlim = 10000, split_reassemble = 200)
-ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klustering", ...) {
+ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klustering", split_reassemble = 1000, ...) {
   require(Biostrings); require(phyloseq)
-  extraargs <- list(...)
   #feature table (ie OTU table) from phyloseq
   stopifnot(any(class(ps) %in% "phyloseq"))
   otu1 <- as(otu_table(ps), "matrix")
@@ -710,14 +714,17 @@ ps2KTU <- function(ps = NULL, subset = NULL, dnaseqs = NULL, method = "klusterin
     seqs <- sample(seqs, subset)
     ft <- ft[match(as.character(seqs), rownames(ft)), ]
   }
+  # write sequences to temp fasta file
+  tempseqs <- tempfile(fileext = ".fasta")
+  Biostrings::writeXStringSet(seqs, tempseqs)
   # run clustering
   if(method == "klustering") {
-    KTU::klustering(repseq = seqs,
+    KTU::klustering(repseq = tempseqs,
                     feature.table = ft, ...)
   } else if(method == "ktusp") {
-    if(nrow(ft) < extraargs$split_reassemble)
+    if(nrow(ft) < split_reassemble)
       warning("Number of tips is lower than the threshold to reassamble tips. Consider tuning ktusp or using klustering")
-    ktusp(repseq = seqs,
+    ktusp(repseq = tempseqs,
           feature.table = ft, ...)
   }
 }
